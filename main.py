@@ -8,10 +8,12 @@ from sqlalchemy.exc import IntegrityError
 
 from app.config import settings
 from app.routers import (
-    router_auth, router_compra, router_empleado, router_inventario,
-    router_producto, router_proveedor, router_usuario,
+    router_auth, router_bitacora, router_caja, router_cliente, router_compra,
+    router_configuracion, router_consulta, router_empleado, router_inventario,
+    router_producto, router_proveedor, router_usuario, router_venta,
 )
 from app.routers.router_catalogo import ROUTERS_CATALOGO
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -62,6 +64,12 @@ ROUTERS = [
     router_proveedor.router,
     router_inventario.router,
     router_compra.router,
+    router_cliente.router,
+    router_caja.router,
+    router_venta.router,
+    router_configuracion.router,
+    router_bitacora.router,
+    router_consulta.router,
 ]
 
 for router in ROUTERS:

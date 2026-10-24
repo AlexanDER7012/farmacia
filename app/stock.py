@@ -102,6 +102,7 @@ def mover_stock(
     id_usuario: int,
     referencia: str | None = None,
     observaciones: str | None = None,
+    permitir_inactivo: bool = False,   # solo para revertir (anular una venta)
 ) -> Decimal:
     """Suma o resta stock de un lote en una ubicación. Devuelve lo que queda ahí."""
     cantidad = Decimal(cantidad)
@@ -111,7 +112,8 @@ def mover_stock(
         raise _error("Tipo de movimiento no válido")
 
     producto = lote.producto
-    revisar_producto_activo(producto)
+    if not permitir_inactivo:
+        revisar_producto_activo(producto)
 
     fila = db.scalars(
         select(Inventario)
