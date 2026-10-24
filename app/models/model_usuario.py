@@ -1,3 +1,7 @@
+"""
+Seguridad y personal: rol, puesto, empleado y usuario.
+Cada usuario está ligado a un empleado (uno a uno).
+"""
 from datetime import date, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
@@ -77,6 +81,12 @@ class Usuario(Base):
 
     empleado: Mapped["Empleado"] = relationship(back_populates="usuario")
     rol: Mapped["Rol"] = relationship(back_populates="usuarios")
+
+    @property
+    def bloqueado(self) -> bool:
+        """True si superó los intentos fallidos permitidos."""
+        from app.config import settings
+        return self.intentos_fallidos >= settings.MAX_LOGIN_ATTEMPTS
 
     __table_args__ = (
         CheckConstraint("intentos_fallidos >= 0", name="intentos"),
