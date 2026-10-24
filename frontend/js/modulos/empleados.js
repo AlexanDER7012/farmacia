@@ -42,18 +42,25 @@
 
     function abrir(empleado) {
       const campos = [
-        { nombre: "nombres", etiqueta: "Nombres", requerido: true, max: 100, columnas: 6 },
-        { nombre: "apellidos", etiqueta: "Apellidos", requerido: true, max: 100, columnas: 6 },
-        { nombre: "dpi", etiqueta: "DPI", requerido: true, max: 15, columnas: 6,
+        // Fila 1: identificación
+        { nombre: "nombres", etiqueta: "Nombres", requerido: true, max: 100, columnas: 4 },
+        { nombre: "apellidos", etiqueta: "Apellidos", requerido: true, max: 100, columnas: 4 },
+        { nombre: "dpi", etiqueta: "DPI", requerido: true, max: 15, columnas: 4,
           placeholder: "1234567890101", ayuda: "13 dígitos (con o sin espacios)" },
-        { nombre: "telefono", etiqueta: "Teléfono", tipo: "telefono", columnas: 6 },
-        { nombre: "correo", etiqueta: "Correo", tipo: "email", max: 100, columnas: 6 },
-        { nombre: "fecha_contratacion", etiqueta: "Fecha de contratación", tipo: "fecha", columnas: 6 },
-        { nombre: "id_puesto", etiqueta: "Puesto", tipo: "select", requerido: true, numerico: true, columnas: 6,
+
+        // Fila 2: contacto
+        { nombre: "telefono", etiqueta: "Teléfono", tipo: "telefono", columnas: 4 },
+        { nombre: "correo", etiqueta: "Correo", tipo: "email", max: 100, columnas: 4 },
+        { nombre: "fecha_contratacion", etiqueta: "Fecha de contratación", tipo: "fecha", columnas: 4 },
+
+        // Fila 3: trabajo
+        { nombre: "id_puesto", etiqueta: "Puesto", tipo: "select", requerido: true, numerico: true, columnas: 4,
           opciones: aOpciones(puestos), actual: empleado ? { valor: empleado.puesto.id, texto: empleado.puesto.nombre } : null },
-        { nombre: "id_ubicacion", etiqueta: "Ubicación donde trabaja", tipo: "select", requerido: true, numerico: true, columnas: 6,
+        { nombre: "id_ubicacion", etiqueta: "Ubicación donde trabaja", tipo: "select", requerido: true, numerico: true, columnas: 4,
           opciones: aOpciones(ubicaciones), actual: empleado ? { valor: empleado.ubicacion.id, texto: empleado.ubicacion.nombre } : null },
-        { nombre: "salario", etiqueta: "Salario", tipo: "numero", min: 0, prefijo: "Q", columnas: 6 },
+        { nombre: "salario", etiqueta: "Salario", tipo: "numero", min: 0, prefijo: "Q", columnas: 4 },
+
+        // Fila 4
         { nombre: "direccion", etiqueta: "Dirección", tipo: "area", max: 255, filas: 2 },
       ];
 

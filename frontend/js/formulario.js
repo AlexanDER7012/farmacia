@@ -94,8 +94,17 @@ const Formulario = {
           ${opciones.map((o) => `
             <option value="${UI.escapar(o.valor)}" ${String(o.valor) === String(v) ? "selected" : ""}>${UI.escapar(o.texto)}</option>`).join("")}
         </select>`;
+    } else if (campo.tipo === "buscar") {
+      control = `
+        <div class="buscador-remoto" data-buscar="${campo.nombre}">
+          <input type="hidden" name="${campo.nombre}" data-tipo="numero" value="${UI.escapar(v)}">
+          <input type="text" class="form-control" id="${id}" autocomplete="off"
+                 placeholder="${UI.escapar(campo.placeholder || "Escribe para buscar...")}"
+                 value="${UI.escapar(campo.textoInicial || "")}">
+          <div class="lista-resultados d-none"></div>
+        </div>`;
     } else {
-      const tipos = { texto: "text", email: "email", telefono: "tel", numero: "number", fecha: "date" };
+      const tipos = { texto: "text", email: "email", telefono: "tel", numero: "number", fecha: "date", password: "password" };
       const extra = [];
       if (campo.max) extra.push(`maxlength="${campo.max}"`);
       if (campo.tipo === "numero") {
@@ -104,9 +113,12 @@ const Formulario = {
         if (campo.maximo != null) extra.push(`max="${campo.maximo}"`);
       }
       if (campo.tipo === "telefono") extra.push(`maxlength="9" inputmode="numeric"`);
+      if (campo.tipo === "password") extra.push(`autocomplete="new-password"`);
+      if (campo.lista) extra.push(`list="dl-${campo.nombre}" autocomplete="off"`);
       const placeholder = campo.placeholder || (campo.tipo === "telefono" ? "1234-5678" : "");
       control = `<input type="${tipos[campo.tipo] || "text"}" class="form-control" id="${id}" name="${campo.nombre}"
-        value="${UI.escapar(v)}" placeholder="${UI.escapar(placeholder)}" ${extra.join(" ")}>`;
+        value="${campo.tipo === "password" ? "" : UI.escapar(v)}" placeholder="${UI.escapar(placeholder)}" ${extra.join(" ")}>`;
+      if (campo.lista) control += `<datalist id="dl-${campo.nombre}"></datalist>`;
       if (campo.prefijo) {
         control = `<div class="input-group has-validation"><span class="input-group-text">${UI.escapar(campo.prefijo)}</span>${control}</div>`;
       }
@@ -115,13 +127,61 @@ const Formulario = {
     return `<div class="col-md-${campo.columnas || 12}">${etiqueta}${control}${ayuda}</div>`;
   },
 
-  /**
-   * Abre el formulario.
-   * alGuardar(datos): hace el POST o PUT. Si lanza error, el error se muestra en el formulario.
-   * campoDuplicado: en qué campo mostrar el error de "ya existe" (409), ej. "nit" o "dpi".
-   */
+  /** Conecta los campos tipo "buscar": consulta al servidor mientras se escribe */
+  _prepararBuscadores(form, campos) {
+    for (const campo of campos.filter((c) => c.tipo === "buscar")) {
+      const caja = form.querySelector(`[data-buscar="${campo.nombre}"]`);
+      const oculto = caja.querySelector('input[type="hidden"]');
+      const texto = caja.querySelector('input[type="text"]');
+      const lista = caja.querySelector(".lista-resultados");
+      const mostrar = campo.mostrar || ((f) => UI.escapar(campo.texto(f)));
+      let espera;
+      let numero = 0;
+      let items = [];
+
+      const cerrarLista = () => lista.classList.add("d-none");
+
+      texto.addEventListener("input", () => {
+        oculto.value = "";   // si cambia el texto, hay que volver a elegir
+        clearTimeout(espera);
+        const termino = texto.value.trim();
+        if (!termino) { cerrarLista(); return; }
+        espera = setTimeout(async () => {
+          const esta = ++numero;
+          try {
+            const r = await API.get(campo.url, { buscar: termino, por_pagina: 8, ...(campo.parametros || {}) });
+            if (esta !== numero) return;
+            items = r.items || r;
+            lista.innerHTML = items.length
+              ? items.map((f, i) => `<button type="button" class="resultado" data-i="${i}">${mostrar(f)}</button>`).join("")
+              : `<div class="sin-resultados">Sin resultados para "${UI.escapar(termino)}"</div>`;
+            lista.classList.remove("d-none");
+          } catch {
+            cerrarLista();
+          }
+        }, 300);
+      });
+
+      // mousedown en lugar de click: ocurre antes de que el campo pierda el foco
+      lista.addEventListener("mousedown", (e) => {
+        const boton = e.target.closest("[data-i]");
+        if (!boton) return;
+        e.preventDefault();
+        const fila = items[Number(boton.dataset.i)];
+        oculto.value = fila.id;
+        texto.value = campo.texto(fila);
+        texto.classList.remove("is-invalid");
+        cerrarLista();
+        campo.alElegir?.(fila, form);
+      });
+
+      texto.addEventListener("blur", () => setTimeout(cerrarLista, 150));
+    }
+  },
+
+
   abrir({ titulo, icono = "bi-pencil-square", campos, valores = {}, ancho = "",
-          textoGuardar = "Guardar", campoDuplicado = null, alGuardar }) {
+          textoGuardar = "Guardar", peligro = false, campoDuplicado = null, alGuardar, alAbrir }) {
     const modal = this._modal();
     modal.querySelector(".modal-dialog").className = `modal-dialog modal-dialog-centered modal-dialog-scrollable ${ancho}`;
     modal.querySelector(".modal-content").innerHTML = `
@@ -138,13 +198,18 @@ const Formulario = {
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-vidrio" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i>${UI.escapar(textoGuardar)}</button>
+          <button type="submit" class="btn ${peligro ? "btn-peligro" : "btn-primary"}">
+            <i class="bi bi-check2 me-1"></i>${UI.escapar(textoGuardar)}
+          </button>
         </div>
       </form>`;
 
     const form = modal.querySelector("form");
     const botonGuardar = form.querySelector('button[type="submit"]');
     const instancia = bootstrap.Modal.getOrCreateInstance(modal);
+
+    this._prepararBuscadores(form, campos);
+    alAbrir?.(form);
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -155,8 +220,9 @@ const Formulario = {
       const faltantes = {};
       for (const c of campos) {
         const valor = datos[c.nombre];
-        if (c.requerido && (valor === null || valor === undefined || String(valor).trim() === "")) {
-          faltantes[c.nombre] = `${c.etiqueta} es obligatorio`;
+        const visible = !form.elements[c.nombre]?.closest(".d-none");
+        if (c.requerido && visible && (valor === null || valor === undefined || String(valor).trim() === "")) {
+          faltantes[c.nombre] = c.tipo === "buscar" ? `Busca y elige ${c.etiqueta.toLowerCase()}` : `${c.etiqueta} es obligatorio`;
         }
       }
       if (Object.keys(faltantes).length) {
@@ -166,7 +232,7 @@ const Formulario = {
 
       UI.cargando(botonGuardar, true);
       try {
-        await alGuardar(datos);
+        await alGuardar(datos, form);
         instancia.hide();
       } catch (error) {
         if (error.estado === 409 && campoDuplicado) UI.mostrarErrores(form, { campos: { [campoDuplicado]: error.message } });
@@ -176,7 +242,63 @@ const Formulario = {
       }
     });
 
-    modal.addEventListener("shown.bs.modal", () => form.querySelector("input, select, textarea")?.focus(), { once: true });
+    modal.addEventListener("shown.bs.modal", () =>
+      form.querySelector("input:not([type=hidden]), select, textarea")?.focus(), { once: true });
     instancia.show();
+  },
+
+  /** Pide un motivo obligatorio (para anular) y luego ejecuta alGuardar({ motivo }) */
+  pedirMotivo({ titulo, mensaje, textoGuardar = "Anular", alGuardar }) {
+    this.abrir({
+      titulo,
+      icono: "bi-exclamation-octagon",
+      textoGuardar,
+      peligro: true,
+      campos: [{ nombre: "motivo", etiqueta: "Motivo", tipo: "area", requerido: true, filas: 3, ayuda: mensaje }],
+      alGuardar,
+    });
+  },
+
+  /**
+   * Muestra un detalle (solo lectura) en el mismo modal.
+   * botones: [{ accion, texto, icono, clase }]  ->  alAccionar(accion)
+   */
+  mostrar({ titulo, icono = "bi-eye", cuerpo, ancho = "modal-lg", botones = [], alAccionar }) {
+    const modal = this._modal();
+    modal.querySelector(".modal-dialog").className = `modal-dialog modal-dialog-centered modal-dialog-scrollable ${ancho}`;
+    modal.querySelector(".modal-content").innerHTML = `
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi ${icono} me-2"></i>${UI.escapar(titulo)}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">${cuerpo}</div>
+      <div class="modal-footer">
+        ${botones.map((b) => `
+          <button type="button" class="btn ${b.clase || "btn-vidrio"}" data-accion="${b.accion}">
+            ${b.icono ? `<i class="bi ${b.icono} me-1"></i>` : ""}${UI.escapar(b.texto)}
+          </button>`).join("")}
+        <button type="button" class="btn btn-vidrio" data-bs-dismiss="modal">Cerrar</button>
+      </div>`;
+    modal.querySelector(".modal-footer").addEventListener("click", (e) => {
+      const boton = e.target.closest("[data-accion]");
+      if (boton) alAccionar?.(boton.dataset.accion);
+    });
+    bootstrap.Modal.getOrCreateInstance(modal).show();
+  },
+
+  /** Imprime un HTML sin abrir otra pestaña (usa un marco oculto) */
+  imprimir(html) {
+    const marco = document.createElement("iframe");
+    marco.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
+    document.body.appendChild(marco);
+    const doc = marco.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    setTimeout(() => {
+      marco.contentWindow.focus();
+      marco.contentWindow.print();
+      setTimeout(() => marco.remove(), 1000);
+    }, 300);
   },
 };

@@ -48,8 +48,7 @@ const UI = {
     return UI.isoDe(new Date(anio, mes - 1, dia + dias));
   },
 
-  /** Evita que un texto con < > se interprete como HTML */
-    /** Evita que un texto se interprete como HTML (también sirve dentro de atributos value="...") */
+  /** Evita que un texto se interprete como HTML (también sirve dentro de atributos value="...") */
   escapar(texto) {
     return String(texto ?? "")
       .replace(/&/g, "&amp;")
@@ -231,8 +230,12 @@ const UI = {
     let sinCampo = Object.keys(campos).length === 0;
 
     for (const [nombre, mensaje] of Object.entries(campos)) {
-      const campo = form.elements[nombre];
-      if (!campo) { sinCampo = true; continue; }
+      let campo = form.elements[nombre];
+      // Un buscador guarda el valor en un campo oculto: el error se marca en el campo visible
+      if (campo && campo.type === "hidden") {
+        campo = campo.parentElement.querySelector('input[type="text"]') || campo;
+      }
+      if (!campo || campo.type === "hidden") { sinCampo = true; continue; }
       campo.classList.add("is-invalid");
       const nota = document.createElement("div");
       nota.className = "invalid-feedback dinamico";

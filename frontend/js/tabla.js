@@ -1,28 +1,12 @@
-/**
- * tabla.js
- * Tabla reutilizable: búsqueda, filtro de estado y paginación EN EL SERVIDOR.
- * Solo se vuelven a dibujar las filas y el pie, así el buscador no pierde
- * lo que se escribe ni el cursor.
- *
- * Uso:
- *   const tabla = new TablaPaginada({
- *     contenedor: elemento,
- *     url: "/api/categorias",
- *     columnas: [{ titulo: "Nombre", render: (fila) => UI.escapar(fila.nombre) }],
- *     acciones: (fila) => `<button data-accion="editar">...</button>`,
- *     alAccionar: (accion, fila) => { ... },
- *     botones: `<button>Nuevo</button>`,   // HTML extra a la derecha del buscador
- *   });
- *   tabla.recargar();
- */
 class TablaPaginada {
   constructor(opciones) {
     this.o = {
       porPagina: 20,
       filtroActivo: true,
+      buscador: true,
       textoBuscar: "Buscar...",
       vacio: "No hay registros",
-      parametros: () => ({}),   // filtros extra: () => ({ id_categoria: 3 })
+      parametros: () => ({}),
       claseFila: () => "",
       ...opciones,
     };
@@ -37,6 +21,18 @@ class TablaPaginada {
     this.cargar();
   }
 
+  /** Controles de fecha listos para poner en "botones" */
+  static filtrosFecha() {
+    return `
+      <input type="date" class="form-control filtro" data-filtro="desde" title="Desde">
+      <input type="date" class="form-control filtro" data-filtro="hasta" title="Hasta">`;
+  }
+
+  /** Valor actual de un filtro: tabla.filtro("desde") */
+  filtro(nombre) {
+    return this.o.contenedor.querySelector(`[data-filtro="${nombre}"]`)?.value || "";
+  }
+
   get totalColumnas() {
     return this.o.columnas.length + (this.o.acciones ? 1 : 0);
   }
@@ -45,17 +41,18 @@ class TablaPaginada {
     const c = this.o.contenedor;
     c.innerHTML = `
       <div class="barra-tabla">
-        <div class="campo-pill buscador">
-          <i class="bi bi-search icono-izq"></i>
-          <input type="search" class="form-control" placeholder="${UI.escapar(this.o.textoBuscar)}" data-rol="buscar">
-        </div>
+        ${this.o.buscador ? `
+          <div class="campo-pill buscador">
+            <i class="bi bi-search icono-izq"></i>
+            <input type="search" class="form-control" placeholder="${UI.escapar(this.o.textoBuscar)}" data-rol="buscar">
+          </div>` : ""}
         ${this.o.filtroActivo ? `
           <select class="form-select filtro-estado" data-rol="activo">
             <option value="true">Activos</option>
             <option value="false">Inactivos</option>
             <option value="">Todos</option>
           </select>` : ""}
-        <div class="ms-auto d-flex gap-2">${this.o.botones || ""}</div>
+        <div class="ms-auto d-flex flex-wrap gap-2">${this.o.botones || ""}</div>
       </div>
       <div class="table-responsive">
         <table class="table align-middle">
@@ -75,7 +72,7 @@ class TablaPaginada {
 
     // Búsqueda: espera a que el usuario deje de escribir
     let espera;
-    c.querySelector('[data-rol="buscar"]').addEventListener("input", (e) => {
+    c.querySelector('[data-rol="buscar"]')?.addEventListener("input", (e) => {
       clearTimeout(espera);
       espera = setTimeout(() => {
         this.buscar = e.target.value.trim();
@@ -84,14 +81,28 @@ class TablaPaginada {
       }, 350);
     });
 
-    const filtro = c.querySelector('[data-rol="activo"]');
-    if (filtro) {
-      filtro.addEventListener("change", (e) => {
-        this.activo = e.target.value;
+    c.querySelector('[data-rol="activo"]')?.addEventListener("change", (e) => {
+      this.activo = e.target.value;
+      this.pagina = 1;
+      this.cargar();
+    });
+
+    // Filtros extra (fechas, ubicación, estado...)
+    c.querySelectorAll("[data-filtro]").forEach((control) =>
+      control.addEventListener("change", () => {
+        const desde = this.filtro("desde");
+        const hasta = this.filtro("hasta");
+        if (desde && hasta && desde > hasta) {
+          UI.alerta({
+            tipo: "advertencia",
+            titulo: "Revisa las fechas",
+            mensaje: "La fecha 'Desde' no puede ser mayor que la fecha 'Hasta'.",
+          });
+          return;
+        }
         this.pagina = 1;
         this.cargar();
-      });
-    }
+      }));
 
     // Botones de cada fila (un solo escuchador para toda la tabla)
     this.cuerpo.addEventListener("click", (e) => {
@@ -130,7 +141,7 @@ class TablaPaginada {
         por_pagina: this.porPagina,
         buscar: this.buscar,
         activo: this.activo,
-        ...this.o.parametros(),
+        ...this.o.parametros(this),
       });
       if (numero !== this._peticion) return;   // llegó tarde, ya hay otra búsqueda más nueva
 

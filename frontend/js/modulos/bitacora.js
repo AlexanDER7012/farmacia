@@ -15,27 +15,21 @@
 
   function render(contenedor) {
     contenedor.innerHTML = `<div class="card p-3 p-md-4"><div id="tabla-bitacora"></div></div>`;
-    const caja = contenedor.querySelector("#tabla-bitacora");
 
-    const filtros = `
-      <select class="form-select filtro" data-filtro="accion" title="Acción">
-        <option value="">Todas las acciones</option>
-        ${Object.entries(ACCIONES).map(([clave, [texto]]) => `<option value="${clave}">${texto}</option>`).join("")}
-      </select>
-      <input type="date" class="form-control filtro" data-filtro="desde" title="Desde">
-      <input type="date" class="form-control filtro" data-filtro="hasta" title="Hasta">`;
-
-    const valor = (nombre) => caja.querySelector(`[data-filtro="${nombre}"]`)?.value || "";
-
-    const tabla = new TablaPaginada({
-      contenedor: caja,
+    new TablaPaginada({
+      contenedor: contenedor.querySelector("#tabla-bitacora"),
       url: "/api/bitacora",
       filtroActivo: false,
       porPagina: 50,
       textoBuscar: "Buscar en el detalle o por usuario...",
       vacio: "No hay actividad registrada",
-      botones: filtros,
-      parametros: () => ({ accion: valor("accion"), desde: valor("desde"), hasta: valor("hasta") }),
+      botones: `
+        <select class="form-select filtro" data-filtro="accion" title="Acción">
+          <option value="">Todas las acciones</option>
+          ${Object.entries(ACCIONES).map(([clave, [texto]]) => `<option value="${clave}">${texto}</option>`).join("")}
+        </select>
+        ${TablaPaginada.filtrosFecha()}`,
+      parametros: (t) => ({ accion: t.filtro("accion"), desde: t.filtro("desde"), hasta: t.filtro("hasta") }),
       columnas: [
         { titulo: "Fecha", clase: "text-nowrap", render: (f) => UI.fechaHora(f.fecha) },
         { titulo: "Usuario", render: (f) => f.usuario
@@ -50,22 +44,6 @@
         { titulo: "IP", render: (f) => `<span class="small text-secondary">${UI.escapar(f.ip || "—")}</span>` },
       ],
     });
-
-    caja.querySelectorAll("[data-filtro]").forEach((control) =>
-      control.addEventListener("change", () => {
-        const desde = valor("desde");
-        const hasta = valor("hasta");
-        if (desde && hasta && desde > hasta) {
-          UI.alerta({
-            tipo: "advertencia",
-            titulo: "Revisa las fechas",
-            mensaje: "La fecha 'Desde' no puede ser mayor que la fecha 'Hasta'.",
-          });
-          return;
-        }
-        tabla.pagina = 1;
-        tabla.cargar();
-      }));
   }
 
   App.registrar("bitacora", { render });

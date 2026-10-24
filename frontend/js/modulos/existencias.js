@@ -16,25 +16,21 @@
 
   async function render(contenedor) {
     const ubicaciones = await API.get("/api/ubicaciones/opciones");
-
     contenedor.innerHTML = `<div class="card p-3 p-md-4"><div id="tabla-existencias"></div></div>`;
-    const caja = contenedor.querySelector("#tabla-existencias");
 
-    const filtro = `
-      <select class="form-select filtro" data-filtro="ubicacion" title="Ubicación">
-        <option value="">Todas las ubicaciones</option>
-        ${ubicaciones.map((u) => `<option value="${u.id}">${UI.escapar(u.nombre)}</option>`).join("")}
-      </select>`;
-
-    const tabla = new TablaPaginada({
-      contenedor: caja,
+    new TablaPaginada({
+      contenedor: contenedor.querySelector("#tabla-existencias"),
       url: "/api/consultas/existencias",
       filtroActivo: false,
       porPagina: 50,
       textoBuscar: "Buscar por producto, código o lote...",
       vacio: "No hay existencias. Recibe una compra para que aparezcan aquí.",
-      botones: filtro,
-      parametros: () => ({ id_ubicacion: caja.querySelector('[data-filtro="ubicacion"]').value }),
+      botones: `
+        <select class="form-select filtro" data-filtro="ubicacion" title="Ubicación">
+          <option value="">Todas las ubicaciones</option>
+          ${ubicaciones.map((u) => `<option value="${u.id}">${UI.escapar(u.nombre)}</option>`).join("")}
+        </select>`,
+      parametros: (t) => ({ id_ubicacion: t.filtro("ubicacion") }),
       columnas: [
         { titulo: "Producto", render: (f) => `
             <div class="fw-semibold">${UI.escapar(f.producto)}</div>
@@ -44,11 +40,6 @@
         { titulo: "Ubicación", render: (f) => UI.escapar(f.ubicacion) },
         { titulo: "Cantidad", clase: "text-end", render: (f) => `<span class="fw-bold">${UI.numero(f.cantidad)}</span>` },
       ],
-    });
-
-    caja.querySelector('[data-filtro="ubicacion"]').addEventListener("change", () => {
-      tabla.pagina = 1;
-      tabla.cargar();
     });
   }
 
