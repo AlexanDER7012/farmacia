@@ -49,10 +49,14 @@ const UI = {
   },
 
   /** Evita que un texto con < > se interprete como HTML */
+    /** Evita que un texto se interprete como HTML (también sirve dentro de atributos value="...") */
   escapar(texto) {
-    const div = document.createElement("div");
-    div.textContent = texto ?? "";
-    return div.innerHTML;
+    return String(texto ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   },
 
   // ===================== Tema claro / oscuro =====================
