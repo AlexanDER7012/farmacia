@@ -2,7 +2,7 @@
  * ui.js
  * Utilidades de pantalla que usan todos los módulos:
  * formatos, tema claro/oscuro, recuadros de confirmación y error,
- * avisos pequeños y manejo de formularios.
+ * avisos pequeños, manejo de formularios y máscara de teléfono.
  */
 const UI = {
   // ===================== Formatos =====================
@@ -56,6 +56,12 @@ const UI = {
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
+  },
+
+  /** "55551234" o "5555 1234" -> "5555-1234" (máximo 8 dígitos) */
+  formatoTelefono(valor) {
+    const digitos = String(valor || "").replace(/\D/g, "").slice(0, 8);
+    return digitos.length > 4 ? `${digitos.slice(0, 4)}-${digitos.slice(4)}` : digitos;
   },
 
   // ===================== Tema claro / oscuro =====================
@@ -267,3 +273,10 @@ const UI = {
     }
   },
 };
+
+document.addEventListener("input", (e) => {
+  const campo = e.target;
+  if (!(campo instanceof HTMLInputElement) || campo.type !== "tel") return;
+  const formateado = UI.formatoTelefono(campo.value);
+  if (campo.value !== formateado) campo.value = formateado;
+});

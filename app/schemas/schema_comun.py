@@ -1,3 +1,7 @@
+"""
+Tipos y schemas que se repiten en todo el sistema.
+Cada tipo ya trae su validación, así no se repite en cada schema.
+"""
 from datetime import date
 from decimal import Decimal
 from typing import Annotated, Generic, TypeVar
@@ -21,6 +25,20 @@ def _como_error_pydantic(funcion):
     return envoltura
 
 
+def _opcional_con_maximo(maximo: int):
+    """
+    Texto opcional con largo máximo. Vacío o solo espacios -> None.
+    El largo se revisa aquí (y no con Field(max_length=...)) porque
+    Pydantic no puede medir el largo de un None.
+    """
+    def limpiar(valor):
+        texto = limpiar_texto(valor, obligatorio=False)
+        if texto is not None and len(texto) > maximo:
+            raise ValueError(f"Máximo {maximo} caracteres")
+        return texto
+    return _como_error_pydantic(limpiar)
+
+
 # ===================== Tipos validados =====================
 TextoObligatorio = Annotated[str, BeforeValidator(_como_error_pydantic(
     lambda v: limpiar_texto(v, obligatorio=True, campo="Este campo")
@@ -28,6 +46,13 @@ TextoObligatorio = Annotated[str, BeforeValidator(_como_error_pydantic(
 TextoOpcional = Annotated[str | None, BeforeValidator(_como_error_pydantic(
     lambda v: limpiar_texto(v, obligatorio=False)
 ))]
+
+# Opcionales con largo máximo (usar estos en lugar de Annotated[TextoOpcional, Field(max_length=...)])
+TextoOpcional20 = Annotated[str | None, BeforeValidator(_opcional_con_maximo(20))]
+TextoOpcional50 = Annotated[str | None, BeforeValidator(_opcional_con_maximo(50))]
+TextoOpcional100 = Annotated[str | None, BeforeValidator(_opcional_con_maximo(100))]
+TextoOpcional255 = Annotated[str | None, BeforeValidator(_opcional_con_maximo(255))]
+
 Correo = Annotated[str | None, BeforeValidator(_como_error_pydantic(validar_correo))]
 Telefono = Annotated[str | None, BeforeValidator(_como_error_pydantic(validar_telefono))]
 Dpi = Annotated[str, BeforeValidator(_como_error_pydantic(validar_dpi))]
@@ -53,7 +78,7 @@ class Referencia(ORMBase):
 class Mensaje(BaseModel):
     """Respuesta simple para acciones (dar de baja, reactivar...)."""
     mensaje: str
-    aviso: str | None = None  
+    aviso: str | None = None   # ej. "El precio de venta es menor que el costo"
 
 
 T = TypeVar("T")

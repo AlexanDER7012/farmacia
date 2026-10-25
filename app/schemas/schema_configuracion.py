@@ -4,13 +4,15 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field
 
-from app.schemas.schema_comun import Correo, ORMBase, Referencia, Telefono, TextoObligatorio, TextoOpcional
+from app.schemas.schema_comun import (
+    Correo, ORMBase, Referencia, Telefono, TextoObligatorio, TextoOpcional20, TextoOpcional255,
+)
 
 
 class ConfiguracionUpdate(BaseModel):
     nombre_negocio: Annotated[TextoObligatorio, Field(max_length=100)]
-    nit: Annotated[TextoOpcional, Field(max_length=20)] = None
-    direccion: Annotated[TextoOpcional, Field(max_length=255)] = None
+    nit: TextoOpcional20 = None
+    direccion: TextoOpcional255 = None
     telefono: Telefono = None
     correo: Correo = None
     iva_porcentaje: Annotated[Decimal, Field(ge=0, le=100, max_digits=5, decimal_places=2)]

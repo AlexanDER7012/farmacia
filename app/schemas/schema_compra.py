@@ -6,8 +6,8 @@ from pydantic import BaseModel, Field, model_validator
 from pydantic_core import PydanticCustomError
 
 from app.schemas.schema_comun import (
-    CantidadPositiva, Correo, Nit, ORMBase, Referencia,
-    Telefono, TextoObligatorio, TextoOpcional,
+    CantidadPositiva, Correo, Nit, ORMBase, Referencia, Telefono,
+    TextoObligatorio, TextoOpcional, TextoOpcional50, TextoOpcional100, TextoOpcional255,
 )
 from app.schemas.schema_inventario import revisar_vencimiento
 
@@ -18,10 +18,10 @@ ValorNoNegativo = Annotated[Decimal, Field(ge=0, max_digits=10, decimal_places=2
 class ProveedorCreate(BaseModel):
     nombre: Annotated[TextoObligatorio, Field(max_length=150)]
     nit: Annotated[Nit, Field(max_length=20)]
-    contacto: Annotated[TextoOpcional, Field(max_length=100)] = None
+    contacto: TextoOpcional100 = None
     telefono: Telefono = None
     correo: Correo = None
-    direccion: Annotated[TextoOpcional, Field(max_length=255)] = None
+    direccion: TextoOpcional255 = None
 
 
 class ProveedorUpdate(ProveedorCreate):
@@ -56,7 +56,7 @@ class DetalleCompraCreate(BaseModel):
 class CompraCreate(BaseModel):
     id_proveedor: int
     id_ubicacion: int   # dónde va a entrar la mercadería
-    numero_factura: Annotated[TextoOpcional, Field(max_length=50)] = None
+    numero_factura: TextoOpcional50 = None
     observaciones: TextoOpcional = None
     detalles: list[DetalleCompraCreate] = Field(min_length=1)
 

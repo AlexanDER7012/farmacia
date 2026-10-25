@@ -1,13 +1,11 @@
-from typing import Annotated, Literal
+from typing import Literal
 
-from pydantic import Field
-
-from app.schemas.schema_comun import CatalogoCreate, CatalogoResponse, Telefono, TextoOpcional
+from app.schemas.schema_comun import CatalogoCreate, CatalogoResponse, Telefono, TextoOpcional255
 
 
 class UbicacionCreate(CatalogoCreate):
     tipo: Literal["Sucursal", "Bodega"] = "Sucursal"
-    direccion: Annotated[TextoOpcional, Field(max_length=255)] = None
+    direccion: TextoOpcional255 = None
     telefono: Telefono = None
 
 

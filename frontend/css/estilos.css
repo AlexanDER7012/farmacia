@@ -1253,3 +1253,186 @@ body.menu-contraido .contenido {
     --bs-modal-width: 1140px;
   }
 }
+
+/* =====================================================
+   PUNTO DE VENTA
+   ===================================================== */
+.buscador-pos .form-control {
+  font-size: 1.05rem;
+  padding-top: 0.9rem;
+  padding-bottom: 0.9rem;
+}
+
+.resultados-pos {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.resultado-pos {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--linea);
+  background: var(--fila-hover);
+  color: var(--texto);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.resultado-pos:hover,
+.resultado-pos:focus-visible {
+  border-color: var(--acento);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.resultado-pos .icono-producto {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--acento);
+  font-size: 1.2rem;
+}
+
+.resultado-pos .precio {
+  margin-left: auto;
+  font-weight: 800;
+  color: var(--titulo);
+  white-space: nowrap;
+}
+
+.panel-cobro {
+  position: sticky;
+  top: 92px;
+}
+
+.turno-mini {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.16), rgba(20, 184, 166, 0.06));
+  border: 1px solid rgba(13, 148, 136, 0.25);
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+}
+
+.chip-cliente {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--fila-hover);
+  border: 1px solid var(--linea);
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+
+.metodos-pago {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.metodos-pago button {
+  flex: 1 1 auto;
+  border: 1px solid var(--campo-borde);
+  background: var(--campo-fondo);
+  color: var(--texto);
+  border-radius: 12px;
+  padding: 0.55rem 0.8rem;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.metodos-pago button.activo {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--acento) 0%, #14b8a6 100%);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(13, 148, 136, 0.30);
+}
+
+.vuelto {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--acento);
+}
+
+.btn-cobrar {
+  padding: 0.9rem;
+  font-size: 1.1rem;
+}
+
+.lote-select {
+  min-width: 230px;
+  font-size: 0.85rem;
+  padding: 0.35rem 2rem 0.35rem 0.6rem !important;
+}
+
+.cantidad-carrito {
+  width: 100px;
+  text-align: right;
+  padding: 0.35rem 0.6rem !important;
+  margin-left: auto;
+}
+
+@media (max-width: 991.98px) {
+  .panel-cobro {
+    position: static;
+  }
+}
+
+/* =====================================================
+   PESTAÑAS DE SECCIÓN (Ventas, Inventario, Compras, Administración)
+   ===================================================== */
+.pestanas-modulo {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  margin: -4px 0 18px;
+  padding: 0 4px;
+  border-bottom: 1px solid var(--linea);
+}
+
+.pestanas-modulo a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.7rem 1rem;
+  margin-bottom: -1px;
+  color: var(--texto-suave);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 3px solid transparent;
+  border-radius: 10px 10px 0 0;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.pestanas-modulo a:hover {
+  color: var(--titulo);
+  background: var(--fila-hover);
+}
+
+.pestanas-modulo a.activa {
+  color: var(--acento);
+  border-bottom-color: var(--acento);
+}
+
+[data-bs-theme="dark"] .pestanas-modulo a.activa {
+  color: var(--acento-claro);
+  border-bottom-color: var(--acento-claro);
+}
+
+/* Sin encabezados de sección, el menú necesita un poco de aire arriba */
+.menu-navegacion {
+  padding-top: 12px;
+}

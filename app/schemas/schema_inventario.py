@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field, model_validator
 from pydantic_core import PydanticCustomError
 
-from app.schemas.schema_comun import CantidadPositiva, TextoObligatorio, TextoOpcional
+from app.schemas.schema_comun import CantidadPositiva, TextoObligatorio, TextoOpcional100
 
 
 def revisar_vencimiento(fecha: date | None) -> None:
@@ -47,7 +47,7 @@ class MovimientoCreate(BaseModel):
     numero_lote: Annotated[TextoObligatorio, Field(max_length=50)]
     fecha_vencimiento: date | None = None
     cantidad: CantidadPositiva
-    referencia: Annotated[TextoOpcional, Field(max_length=100)] = None
+    referencia: TextoOpcional100 = None
     observaciones: TextoObligatorio   # el motivo es obligatorio en un movimiento manual
 
     @model_validator(mode="after")

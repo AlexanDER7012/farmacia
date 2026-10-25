@@ -6,8 +6,8 @@ from pydantic import BaseModel, Field, model_validator
 from pydantic_core import PydanticCustomError
 
 from app.schemas.schema_comun import (
-    CantidadPositiva, Correo, MontoNoNegativo, Nit, ORMBase,
-    Referencia, Telefono, TextoObligatorio, TextoOpcional,
+    CantidadPositiva, Correo, MontoNoNegativo, Nit, ORMBase, Referencia,
+    Telefono, TextoObligatorio, TextoOpcional, TextoOpcional20, TextoOpcional255,
 )
 from app.schemas.schema_compra import UsuarioRef
 
@@ -18,7 +18,7 @@ class ClienteCreate(BaseModel):
     nit: Annotated[Nit, Field(max_length=20)] = "CF"
     telefono: Telefono = None
     correo: Correo = None
-    direccion: Annotated[TextoOpcional, Field(max_length=255)] = None
+    direccion: TextoOpcional255 = None
 
 
 class ClienteUpdate(ClienteCreate):
@@ -44,7 +44,7 @@ class DetalleVentaCreate(BaseModel):
 
 class VentaCreate(BaseModel):
     id_cliente: int | None = None   # vacío = Consumidor Final
-    nit: Annotated[TextoOpcional, Field(max_length=20)] = None   # vacío = el NIT del cliente
+    nit: TextoOpcional20 = None     # vacío = el NIT del cliente
     id_tipo_pago: int
     descuento: MontoNoNegativo = Decimal("0")
     observaciones: TextoOpcional = None

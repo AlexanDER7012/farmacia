@@ -6,7 +6,7 @@ from pydantic_core import PydanticCustomError
 
 from app.schemas.schema_comun import (
     CatalogoCreate, CatalogoResponse, ORMBase, Referencia,
-    TextoObligatorio, TextoOpcional,
+    TextoObligatorio, TextoOpcional, TextoOpcional50,
 )
 
 # Mismo tamaño que las columnas NUMERIC(10,2) de la tabla producto
@@ -31,7 +31,7 @@ class ProductoCreate(BaseModel):
     codigo: Annotated[TextoObligatorio, Field(max_length=50)]
     nombre: Annotated[TextoObligatorio, Field(max_length=150)]
     descripcion: TextoOpcional = None
-    concentracion: Annotated[TextoOpcional, Field(max_length=50)] = None
+    concentracion: TextoOpcional50 = None
     id_categoria: int
     id_laboratorio: int
     id_principio_activo: int | None = None
@@ -73,5 +73,5 @@ class ProductoResponse(ORMBase):
     principio_activo: Referencia | None
     presentacion: Referencia
     unidad_medida: Referencia
-    stock_total: Decimal = Decimal("0")  
-    aviso: str | None = None       
+    stock_total: Decimal = Decimal("0")   # suma de todos sus lotes en todas las ubicaciones
+    aviso: str | None = None              # ej. venta con pérdida

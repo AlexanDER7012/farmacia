@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from app.schemas.schema_comun import (
     Correo, Dpi, MontoNoNegativo, ORMBase, Referencia,
-    Telefono, TextoObligatorio, TextoOpcional,
+    Telefono, TextoObligatorio, TextoOpcional255,
 )
 
 
@@ -16,7 +16,7 @@ class EmpleadoCreate(BaseModel):
     dpi: Dpi
     telefono: Telefono = None
     correo: Correo = None
-    direccion: Annotated[TextoOpcional, Field(max_length=255)] = None
+    direccion: TextoOpcional255 = None
     fecha_contratacion: date | None = None
     salario: MontoNoNegativo = Decimal("0")
     id_puesto: int
@@ -24,6 +24,8 @@ class EmpleadoCreate(BaseModel):
 
 
 class EmpleadoUpdate(EmpleadoCreate):
+    # Al editar, el DPI se recibe como texto y el router solo lo valida
+    # si cambió. Así los DPI que ya estaban guardados no se tocan.
     dpi: TextoObligatorio
 
 

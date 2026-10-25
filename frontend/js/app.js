@@ -1,38 +1,38 @@
 /**
  * app.js
  * - Carga el usuario de la sesión (si no hay, manda al login).
- * - Arma el menú según el rol.
- * - Navega entre módulos con la URL (#/productos), así F5 no te saca del módulo.
- * - Abre y cierra el menú lateral.
- * - Tema claro / oscuro.
+ * - Arma el menú según el rol: un botón por sección.
+ * - Las secciones con varias pantallas muestran pestañas arriba.
+ * - Navega con la URL (#/productos), así F5 no te saca de la pantalla.
+ * - Abre y cierra el menú lateral. Tema claro / oscuro.
  */
 const ROLES = { ADMIN: "Administrador", VENDEDOR: "Vendedor", BODEGUERO: "Bodeguero" };
 
 // roles: null = todos; [] = solo Administrador; si no, lista de roles permitidos
 // (el Administrador siempre tiene acceso)
 const MENU = [
-  { seccion: "Inicio", items: [
+  { id: "inicio", titulo: "Panel", icono: "bi-grid-1x2", items: [
     { id: "panel", titulo: "Panel", icono: "bi-grid-1x2", roles: null },
   ]},
-  { seccion: "Ventas", items: [
+  { id: "seccion-ventas", titulo: "Ventas", icono: "bi-cart3", items: [
     { id: "punto-venta", titulo: "Punto de venta", icono: "bi-cart3", roles: [ROLES.VENDEDOR] },
     { id: "ventas", titulo: "Historial de ventas", icono: "bi-receipt", roles: [ROLES.VENDEDOR] },
     { id: "clientes", titulo: "Clientes", icono: "bi-people", roles: [ROLES.VENDEDOR] },
     { id: "caja", titulo: "Caja y gastos", icono: "bi-cash-coin", roles: [ROLES.VENDEDOR] },
   ]},
-  { seccion: "Inventario", items: [
+  { id: "seccion-inventario", titulo: "Inventario", icono: "bi-box-seam", items: [
     { id: "productos", titulo: "Productos", icono: "bi-capsule", roles: null },
     { id: "existencias", titulo: "Existencias", icono: "bi-box-seam", roles: null },
     { id: "movimientos", titulo: "Movimientos", icono: "bi-arrow-left-right", roles: null },
   ]},
-  { seccion: "Compras", items: [
+  { id: "seccion-compras", titulo: "Compras", icono: "bi-bag-check", items: [
     { id: "compras", titulo: "Compras", icono: "bi-bag-check", roles: [ROLES.BODEGUERO] },
     { id: "proveedores", titulo: "Proveedores", icono: "bi-truck", roles: [ROLES.BODEGUERO] },
   ]},
-  { seccion: "Catálogos", items: [
+  { id: "seccion-catalogos", titulo: "Catálogos", icono: "bi-tags", items: [
     { id: "catalogos", titulo: "Catálogos", icono: "bi-tags", roles: null },
   ]},
-  { seccion: "Administración", items: [
+  { id: "seccion-admin", titulo: "Administración", icono: "bi-shield-lock", items: [
     { id: "empleados", titulo: "Empleados", icono: "bi-person-badge", roles: [] },
     { id: "usuarios", titulo: "Usuarios", icono: "bi-person-lock", roles: [] },
     { id: "ubicaciones", titulo: "Ubicaciones y puestos", icono: "bi-geo-alt", roles: [] },
@@ -65,12 +65,32 @@ const App = {
     return item.roles === null || this.tiene(...item.roles);
   },
 
+  /** Pantallas de una sección que el usuario puede ver */
+  visibles(grupo) {
+    return grupo.items.filter((i) => this.puedeVer(i));
+  },
+
+  /** Busca una pantalla por id y devuelve { item, grupo } */
   buscarItem(id) {
     for (const grupo of MENU) {
       const item = grupo.items.find((i) => i.id === id);
-      if (item) return item;
+      if (item) return { item, grupo };
     }
-    return null;
+    return { item: null, grupo: null };
+  },
+
+  // ===================== Última pestaña de cada sección =====================
+  ultimaPestana(grupo) {
+    let guardada = null;
+    try { guardada = localStorage.getItem(`ultima-${grupo.id}`); } catch { /* nada */ }
+    const visibles = this.visibles(grupo);
+    return visibles.find((i) => i.id === guardada) || visibles[0];
+  },
+
+  recordarPestana(grupo, item) {
+    try { localStorage.setItem(`ultima-${grupo.id}`, item.id); } catch { /* nada */ }
+    const enlace = document.querySelector(`.menu-enlace[data-grupo="${grupo.id}"]`);
+    if (enlace) enlace.setAttribute("href", `#/${item.id}`);
   },
 
   // ===================== Inicio =====================
@@ -117,18 +137,33 @@ const App = {
     document.title = this.config.nombre_negocio;
   },
 
+  /** Un botón por sección. Lleva a la última pestaña usada (o a la primera). */
   pintarMenu() {
     const nav = document.getElementById("menu-navegacion");
     nav.innerHTML = MENU.map((grupo) => {
-      const visibles = grupo.items.filter((i) => this.puedeVer(i));
-      if (!visibles.length) return "";
+      if (!this.visibles(grupo).length) return "";
+      const destino = this.ultimaPestana(grupo);
       return `
-        <div class="menu-seccion">${grupo.seccion}</div>
-        ${visibles.map((i) => `
-          <a href="#/${i.id}" class="menu-enlace" data-modulo="${i.id}" title="${i.titulo}">
-            <i class="bi ${i.icono}"></i><span class="texto-menu">${i.titulo}</span>
-          </a>`).join("")}`;
+        <a href="#/${destino.id}" class="menu-enlace" data-grupo="${grupo.id}" title="${grupo.titulo}">
+          <i class="bi ${grupo.icono}"></i><span class="texto-menu">${grupo.titulo}</span>
+        </a>`;
     }).join("");
+  },
+
+  /** Pestañas de la sección actual (solo si tiene más de una pantalla visible) */
+  pintarPestanas(grupo, item) {
+    const barra = document.getElementById("pestanas-modulo");
+    const visibles = this.visibles(grupo);
+    if (visibles.length < 2) {
+      barra.classList.add("d-none");
+      barra.innerHTML = "";
+      return;
+    }
+    barra.classList.remove("d-none");
+    barra.innerHTML = visibles.map((i) => `
+      <a href="#/${i.id}" class="${i.id === item.id ? "activa" : ""}">
+        <i class="bi ${i.icono}"></i>${i.titulo}
+      </a>`).join("");
   },
 
   // ===================== Menú lateral =====================
@@ -148,7 +183,7 @@ const App = {
       }
     });
 
-    // En celular, se cierra al tocar fuera o al elegir un módulo
+    // En celular, se cierra al tocar fuera o al elegir una sección
     document.getElementById("fondo-menu").addEventListener("click", () => document.body.classList.remove("menu-abierto"));
     document.getElementById("menu-navegacion").addEventListener("click", (e) => {
       if (e.target.closest(".menu-enlace")) document.body.classList.remove("menu-abierto");
@@ -170,14 +205,14 @@ const App = {
   // ===================== Navegación =====================
   async navegar() {
     const id = (location.hash.replace("#/", "") || "panel").split("?")[0];
-    const item = this.buscarItem(id);
+    const { item, grupo } = this.buscarItem(id);
 
     if (!item || !this.puedeVer(item)) {
       if (id !== "panel") {
         UI.alerta({
           tipo: "advertencia",
           titulo: "Sin acceso",
-          mensaje: "Tu rol no tiene permiso para entrar a ese módulo.",
+          mensaje: "Tu rol no tiene permiso para entrar a esa pantalla.",
         });
       }
       location.hash = "#/panel";
@@ -189,9 +224,12 @@ const App = {
     }
     this.alSalir = null;
 
-    document.querySelectorAll(".menu-enlace[data-modulo]").forEach((a) =>
-      a.classList.toggle("activo", a.dataset.modulo === id));
-    document.getElementById("titulo-pagina").textContent = item.titulo;
+    // Menú lateral: se marca la sección; pestañas: se marca la pantalla
+    document.querySelectorAll(".menu-enlace[data-grupo]").forEach((a) =>
+      a.classList.toggle("activo", a.dataset.grupo === grupo.id));
+    this.recordarPestana(grupo, item);
+    this.pintarPestanas(grupo, item);
+    document.getElementById("titulo-pagina").textContent = grupo.titulo;
 
     const vista = document.getElementById("vista");
     const modulo = this.modulos[id];
@@ -200,7 +238,7 @@ const App = {
         <div class="card vacio py-5">
           <i class="bi bi-cone-striped"></i>
           <h5 class="mt-2">${item.titulo}</h5>
-          <p class="mb-0">Este módulo se agrega en los siguientes pasos.</p>
+          <p class="mb-0">Esta pantalla todavía no está disponible.</p>
         </div>`;
       return;
     }
